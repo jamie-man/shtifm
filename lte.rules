@@ -1,0 +1,331 @@
+#	1	Token000	LTE告警、wlan告警	-	LTE @SubDomain
+#	2	Token001	告警压缩主键	-	 @Identifier
+#	3	Token002	基站编号	-	@Node
+#	4	Token003	告警组名	-	设备告警 @AlertGroup
+#	5	Token004	告警关键字 	@AlertKey #SDR、AntennaPortSpecifics、CBCardSpecifics、ENBEquipment　20150306变更
+#	6	Token005	告警级别	-	@Severity Critical、Major、Minor、Warning
+#	7	Token006	告警摘要	-	@Summary 内置GNSS接收机天馈开路; 单板序列号: 271620500431; L eNBId:373785
+#	8	Token007	告警位置	-	@Location 1,1,1,1
+#	9	Token008	NMS网管告警ID	-	@NMSID 44 LTE发送端产生和LTE界面上面看到的流水号不一致，没有意义
+#	10	Token009	设备厂商	-	中兴 EMSName
+#	11	Token010	NMS网管告警开始时间	-	20150312135209
+#	12	Token011	NMS网管告警开始时间	-	20150312135209
+#	13	Token012	网元开始时间	-	20150312135209
+#	14	Token013	网元开始时间	-	20150312135209
+#	15	Token014	区局	 -	@Region
+#	16	Token015	分局	-	@SubRegion 部分有数据 一个行政分局可能包含多个分局
+#	17	Token016	站点	-	@Site #无数据#无映射
+#	18	Token017	机房名称	-	无内容#无映射
+#	19	Token018	告警类型	-	@AlertType GNSS天馈链路故障(198096836)
+#	20	Token019	设备型号	-	@AlertSourceType 部分内容为空
+#	21	Token020	工程名称	-	无内容#无映射
+#	22	Token021	上联设备  -AlertInfo1  
+##胡建平反馈：A路由器名称不是上联设备，上联设备应该是MME设备或MSC设备
+#	23	Token022	基站名称	-	 AlertInfo2 
+#	24	Token023	基站等级	-	AlertInfo3 "C"
+#	25	Token024	设备类型	-	 AlertInfo4  
+#	26	Token025	告警位置类型	-	AlertInfo5 无内容#无映射
+#	27	Token026	单站验收	-	 @IsServiceImpact LTE网管为：是、否
+#	28	Token027	基站验收	-	 @AlertInfo6 无内容#无映射 LTE网管为：是、否 ,接口无内容
+#	29	Token028	机房类型	-	 ServiceInfo12 维护分局  金山卫分局 20180316
+#	30	Token029	站点类型	-	 ServiceInfo13 行政区域  金山区 20180316
+#	31	Token030	地址全称	-	 ServiceInfo14 金山区金卫镇卫清路171号 20180316
+#	32	Token031	A路由器名称  ServiceInfo3   	-	 
+#	33	Token032	原始信息	-	 无内容#无映射
+#	34	Token033	LBBU 编号	-	 AlertInfo7  设备编码 LBBU13996(数据来源：CL资源库)
+#	35	Token034	站点编号	-	 AlertInfo8 设置点编码  X006486     X编号（数据来源：CL资源库）
+
+# 监控视图
+# Grade 
+# Tag5 区局为空 或者 未验收告警
+
+#AlertInfo19 厂商型号:EMSName AlertSourceType//A路由器端口:ServiceInfo3 ServiceInfo4//设备类型:AlertInfo4#"AlertInfo5"//站点编码:AlertInfo8//逻辑上联:AlertInfo1//告警摘要:Summary                         	  
+log(debug,"receive lte alarm")
+	  @Domain=14
+	  @SubDomain='BTS'
+	  @FirstOccurrence=getdate
+	  @LastOccurrence=@FirstOccurrence
+	  if(match($Token003,"HEARTBEAT")){
+	  			@Agent = 'LTE'
+	        @Identifier=$Token000+" heartbeat"
+	        @FirstNMSTime = datetotime($Token010,"%Y%m%d%H%M%S")
+					@LastNMSTime = datetotime($Token010,"%Y%m%d%H%M%S")			
+					@FirstNETime	  = @FirstNMSTime
+					@LastNETime       = @LastNMSTime				
+	     		@Severity = 0
+	     		@Node=$Token000+"接口"
+	     		@Summary="LTE接口心跳告警"
+	     		@Tag5=1
+	  		  @SendToAgg=1
+	     		update(@Node)
+	     		update(@Severity)
+	     		update(@LastNETime)
+			    update(@LastNMSTime)
+	  }
+	  else {	  
+	        @Identifier = $Token001
+	        @Node = $Token002
+	        
+	        @AlertGroup = $Token003
+	        #$Token004的内容一直为空，屏蔽该字段的映射 20170704
+	        #@AlertKey  = $Token004
+	        if(match($Token005,"Critical")){
+	             @Severity = 5
+	             @Grade = 3
+	        }
+	        else if(match($Token005,"Major")){
+	             @Severity = 4
+	             @Grade = 2 
+	        }
+	        else if(match($Token005,"Minor")){
+	             @Severity = 3
+	             @Grade = 0 
+	        }
+	        else if(match($Token005,"Warning")){
+	             @Severity = 2
+	             @Grade = 0
+	        }
+
+	        if(match($Token005,"recovery")){
+	             @Severity = 0
+	        }	    
+	        @Summary =   $Token006  
+	        @Location =  $Token007 
+	        
+
+	        @NMSID  =   $Token008
+	        @EMSName=  $Token009
+	        @FirstNMSTime = datetotime($Token010,"%Y%m%d%H%M%S")	
+	        @LastNMSTime = @FirstNMSTime
+
+	        
+	        if(!match($Token011,"")){
+	          @LastNMSTime = datetotime($Token011,"%Y%m%d%H%M%S")
+	        }
+	        @FirstNETime = datetotime($Token012,"%Y%m%d%H%M%S")
+	        if(!match($Token013,"")){
+	          @LastNETime  = datetotime($Token013,"%Y%m%d%H%M%S")
+	        }
+	        #区域有内容
+	        @Region     =   $Token014
+	        #行政分局部分告警无
+	        @SubRegion  =   $Token015   
+	        @Site  = $Token016
+	        @Room  = $Token017
+	        @AlertType = $Token018
+	        @AlertName = $Token018
+	        #设备型号Token019，不是必填字段
+	        @AlertSourceType = $Token019
+	        @NodeType=$Token019
+	        #A路由器名称Token021
+
+	        @AlertInfo1 = $Token021
+	        #基站名称Token022
+	        @AlertInfo2 = $Token022
+	        #基站等级Token023，全部都是“普通”，将来自动修改为C级
+	        @AlertInfo3 = $Token023
+	        #设备类型Token024 从Token005迁移过来            
+	        #20170704 取消下面2行数据的注释（AlertInfo4  AlertInfo5 ）
+	        #@AlertInfo4 = $Token024
+	        #@AlertInfo5 = $Token025
+	        #是否单站验收,将单站验收翻译为是否影响业务
+	        
+	        if( match($Token026,"否")) {
+	        	 @IsServiceImpacted = 0
+	        }			       
+	        else if( match($Token026,"是")) {
+	        	 @IsServiceImpacted = 1
+	        }
+	        else {
+	        	 @IsServiceImpacted = 2
+	        }	
+	        #基站验收字段20150316
+	        @AlertInfo6 = $Token027
+					if( match(@AlertInfo6,"在用")) {
+						 @Tag5 = 0						 
+						 @IsServiceImpacted = 1
+					}	
+					else {
+					    log(debug,"AlertInfo6 不是 在用 Tag5=1")
+					    @Tag5 = 1 
+					    @Tag2 = 1
+					}   	                	        
+        
+	        @ServiceInfo12 = $Token028
+	        @ServiceInfo13 = $Token029
+	        @ServiceInfo14 = $Token030
+      
+	        @ServiceInfo3 = $Token031
+	        
+	        @AlertInfo7 = $Token033   
+	        if(regmatch(@AlertInfo7,"LRRU")){
+	        		@AlertInfo4="LRRU"
+	        		@AlertKey=$Token033
+	        }
+	        else if (regmatch(@Location,"LRRU[0-9]+")){
+	            @AlertInfo4="LRRU"
+	            @AlertKey=extract(@Location,".*(LRRU[0-9]+).*")	        		
+	        }
+	       else if (regmatch(@AlertInfo7,"LBBU")){
+	       	  @AlertInfo4="LBBU" 
+	       	  @AlertKey=$Token033
+	       }
+
+	        log(debug,"AlertInfo4="+@AlertInfo4)
+	        @AlertInfo8 = $Token034
+	        
+	        @SendToAgg=1
+	        @Agent = 'LTE'
+	        #将部分告警类型重新定义告警级别
+	        #[ %vendor,%severitystr,%severityint] = lookup(@AlertType,LTESeverityTalbe) 
+	        #if(int(%severityint)>0){
+	        #	@Severity = int(%severityint)
+	        #}
+	        #LTE现场将X2Access降级,因为该告警无法处理，停止监控
+          #if( match(@AlertKey,"X2Access") and !match($Token005,"recovery")){
+          #   @Severity = 3
+          #}	        
+          #20150327根据胡建平邮件设置Grade为0
+          %v_Grade = lookup(@AlertType,LTEGradeTalbe) 
+          if(int(%v_Grade)==0){
+              @Grade=0
+          }
+           log(debug,"AlertType="+@AlertType)
+           log(debug,"Grade="+@Grade)
+          
+          if(match(@EMSName,"阿朗") and regmatch(@AlertType,"^IK.*")){
+            
+	          if(regmatch($Token006,"^.*  ;.*;.*;.*;.*;.*;.*;.*")){
+	             log(debug,"AlertType="+@AlertType)
+	             log(debug,"Summary="+@Summary)
+	             @AlertName=@AlertType
+	             @AlertType=@AlertType+"#"+extract($Token006,"^(.*)  ;.*;.*;.*;.*;.*;.*;.*")
+	             @Summary=extract($Token006,"^.*  ;(.*;.*;.*;.*;.*;.*;.*)")
+	             log(debug,"AlertType="+@AlertType)
+	             log(debug,"Summary="+@Summary)
+	          }
+	          else if(regmatch($Token006,"^.*   ;.*")){
+	             log(debug,"AlertType="+@AlertType)
+	             log(debug,"Summary="+@Summary)
+	             @AlertName=@AlertType
+	             @AlertType=@AlertType+"#"+extract($Token006,"^(.*)   ;.*")
+	             @Summary=@AlertType+"#"+extract($Token006,"^.*   ;(.*)")
+	             log(debug,"AlertType="+@AlertType)
+	             log(debug,"Summary="+@Summary)
+	          }	
+	        }
+	        if(regmatch(@AlertType,"性能门限越界|底噪阈值异常告警")) {
+	        	@AlertName="底噪告警"
+	        	
+	        }
+	        # (AlertType='网元断链告警(198099803)' or AlertType='网元连接中断(301)' or AlertType='ReachabilityProblem(243)')	        
+	        else if(regmatch(@AlertType,"网元断链告警|网元连接中断|ReachabilityProblem")) {
+	        	@AlertName="网管通道断链"
+	        }
+
+	        ##区局名称为空或基站名称为空 或AlertInfo2包含TD
+	        if(match(@Node,"") or match(@Region,"") or match(@AlertInfo2,"")  or regmatch(@AlertInfo2,"TD") ){
+	          log(debug,"区局名称为空或基站名称为空 或AlertInfo2包含TD Tag5=1")
+	          @Tag5=1
+	        }
+	        if(match(@AlertType,"IK4007091(2590)#PCI DETECTION OF INTERFERENCE")){
+	           @Region="品保"
+	           @SubRegion=""
+	        }
+	        ##Node=5CFF_ 设置不监控
+          #if(regmatch(@Node,"5CFF[0-9|A-F]")){
+          #  log(debug,"Node=5CFF_ 设置不监控 Tag5=1")
+          #  @Tag5=1
+          #  @Grade=0
+          #}
+          
+          ##Location包含RetAld不监控
+          if(regmatch(@Location,"@RetAld")){
+            log(debug,"Location包含RetAld不监控 Tag5=1")
+            @Tag5=1            
+          }
+         # if(regmatch(@EMSName,"诺贝尔")){
+         #   log(debug,"emsname诺贝尔 不监控 Tag5=1")
+         #   @Tag5=1            
+         # }
+          
+                    
+	        #@NodeAlias="设备名称:"+@Node+"//设备编号:"+@AlertInfo7+"//设备别名:"+@AlertInfo2
+	        #@NodeAlias="设备名称:"+@Node
+	        if(!match(@AlertInfo7,"")){
+	            #@NodeAlias=@NodeAlias+"//设备编号:"+@AlertInfo7
+	            @NodeAlias=@NodeAlias+@AlertInfo7
+	        }
+	        #if(!match(@AlertInfo2,"")){
+	            #@NodeAlias=@NodeAlias+"//设备别名:"+@AlertInfo2
+	        #}
+	        	        
+          #@AlertInfo19="厂商型号:"+@EMSName+@AlertSourceType+"//A路由器端口:"+@ServiceInfo3+ " " +@ServiceInfo4+"//设备类型:"+@AlertInfo4+"#"+@AlertInfo5+"//站点编码:"+@AlertInfo8 +"//告警摘要:"+@Summary +"^^"
+          @AlertInfo19="设备名称:"+@Node
+          if(!match(@AlertInfo2,"")){
+	            @AlertInfo19=@AlertInfo19+"//设备别名:"+@AlertInfo2
+	        }
+          if(!match(@EMSName,"")){
+						@AlertInfo19=@AlertInfo19+"厂商型号:"+@EMSName+@AlertSourceType
+					}	
+					if(!match(@ServiceInfo3,"")){
+						@AlertInfo19=@AlertInfo19+"//A路由器端口:"+@ServiceInfo3
+					}	
+					if(!match(@ServiceInfo4,"")){
+						@AlertInfo19=@AlertInfo19+ " " +@ServiceInfo4
+					}	
+					if(!match(@AlertInfo4,"")){
+						@AlertInfo19=@AlertInfo19+"//设备类型:"+@AlertInfo4
+					}	
+					if(!match(@AlertInfo5,"")){
+						@AlertInfo19=@AlertInfo19+"#"+@AlertInfo5
+					}	
+					if(!match(@AlertInfo1,"")){
+						@AlertInfo19=@AlertInfo19+"//逻辑上联:"+@AlertInfo1
+					}					
+					if(!match(@AlertInfo8,"")){
+						@AlertInfo19=@AlertInfo19+"//站点编码:"+@AlertInfo8
+					}
+					if(!match(@Summary,"")){
+						@AlertInfo19=@AlertInfo19+"//告警摘要:"+@Summary
+					}
+					
+					@AlertInfo19=@AlertInfo19 +"^^"
+          
+          if (regmatch(@AlertType,".* +$") )
+					{
+					        @AlertType=extract(@AlertType,"(.*) +$")
+					}
+          #[ %v_region,%v_subregion] = lookup(@Node,LTERegionTalbe) 
+	       	#if( ! match(%v_region,"99") ){
+	       	#   @Region = %v_region
+	       	#   @SubRegion = %v_subregion
+	       	#}
+          log(debug,"AlertInfo19="+@AlertInfo19)
+	        update(@SendToAgg)
+	        update(@Node)
+	     		update(@Severity)
+	     		update(@LastNETime)
+			    update(@LastNMSTime)
+			    update(@LastOccurrence)
+			    update(@AlertType)
+			    update(@Location)
+			    update(@EMSName)
+			    update(@Agent)
+			    update(@Region)
+			    update(@Site)
+			    update(@AlertInfo19)
+          if(!match(@Headquarter,'')) {
+            update(@Headquarter)
+          }
+			    update(@Tag2)
+			
+			    log(debug,"Identifier="+@Identifier)
+			    log(debug,"Node="+@Node)
+			    log(debug,"AlertType="+@AlertType)
+			    log(debug,"Severity="+@Severity)
+			    log(debug,"Grade="+@Grade)
+			    log(debug,"SendToAgg="+@SendToAgg)
+          log(error,"lte alarm is probed ok")   
+	  }
+	        log(debug,"AlertKey="+@AlertKey)
